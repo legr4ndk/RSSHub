@@ -28,13 +28,13 @@ export const handler = async (ctx) => {
     const limit = ctx.req.query('limit') ? Number(ctx.req.query('limit')) : 20;
 
     const rootUrl = 'https://fgw.sh.gov.cn';
-    const currentUrl = new URL(`${category}/index.html`, rootUrl).href;
+    const currentUrl = `${rootUrl}/${category}/index.html`;
 
     const { data: response } = await got(currentUrl);
 
     const $ = load(response);
 
-    const language = $('html').prop('lang');
+    const language = $('html').prop('lang') as Language;
 
     let items = $('ul.nowrapli li')
         .slice(0, limit)
@@ -46,7 +46,7 @@ export const handler = async (ctx) => {
                 title: $item.find('a').prop('title')!,
                 pubDate: parseDate($item.find('span.time').text()),
                 link: new URL($item.find('a').prop('href')!, rootUrl).href,
-                language: language as Language,
+                language,
             };
         });
 
@@ -90,7 +90,7 @@ export const handler = async (ctx) => {
                 };
                 item.image = image;
                 item.banner = image;
-                item.language = language as Language;
+                item.language = language;
 
                 const enclosureUrl = $$('div.pdf-content a, div.xgfj a').first().prop('href');
 
@@ -114,7 +114,7 @@ export const handler = async (ctx) => {
         allowEmpty: true,
         image,
         author,
-        language: language as Language,
+        language,
     };
 };
 

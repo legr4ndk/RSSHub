@@ -1,14 +1,20 @@
 import { load } from 'cheerio';
 
+import InvalidParameterError from '@/errors/types/invalid-parameter';
 import type { DataItem, Language, Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
 import { parseDate } from '@/utils/parse-date';
+import { isValidHost } from '@/utils/valid-host';
 
 import { renderDescription } from './templates/description';
 
 export const handler = async (ctx) => {
     const { category = '' } = ctx.req.param();
+    if (category && !isValidHost(category)) {
+        throw new InvalidParameterError('Invalid category');
+    }
+
     const limit = ctx.req.query('limit') ? Number(ctx.req.query('limit')) : 12;
 
     const rootUrl = 'https://lrepacks.net';
@@ -18,7 +24,7 @@ export const handler = async (ctx) => {
 
     const $ = load(response);
 
-    const language = $('html').prop('lang');
+    const language = $('html').prop('lang') as Language;
 
     let items = $('#main article')
         .slice(0, limit)
@@ -39,7 +45,7 @@ export const handler = async (ctx) => {
                     .find('span.cat-links')
                     .toArray()
                     .map((c) => $(c).text()),
-                language: language as Language,
+                language,
             };
         });
 
@@ -86,7 +92,7 @@ export const handler = async (ctx) => {
                 item.image = image;
                 item.banner = image;
                 item.updated = data ? parseDate(data.dateModified) : undefined;
-                item.language = language as Language;
+                item.language = language;
 
                 return item;
             })
@@ -103,7 +109,7 @@ export const handler = async (ctx) => {
         allowEmpty: true,
         image,
         author: $('meta[property="og:site_name"]').prop('content'),
-        language: language as Language,
+        language,
     };
 };
 
