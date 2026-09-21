@@ -3,16 +3,23 @@ import { load } from 'cheerio';
 import type { Element } from 'domhandler';
 import type { Context } from 'hono';
 
+import InvalidParameterError from '@/errors/types/invalid-parameter';
 import type { Data, DataItem, Language, Route } from '@/types';
 import { ViewType } from '@/types';
 import cache from '@/utils/cache';
 import ofetch from '@/utils/ofetch';
 import { parseDate } from '@/utils/parse-date';
+import { isValidHost } from '@/utils/valid-host';
 
 import { renderDescription } from './templates/security-releases';
 
 export const handler = async (ctx: Context): Promise<Data> => {
-    const { language = 'en-us' } = ctx.req.param();
+    const { language: languageParam = 'en-us' } = ctx.req.param();
+    if (!isValidHost(languageParam)) {
+        throw new InvalidParameterError('Invalid language');
+    }
+
+    const language = languageParam as Language;
     const limit = Number(ctx.req.query('limit') ?? '30');
 
     const baseUrl = 'https://support.apple.com';
@@ -58,7 +65,7 @@ export const handler = async (ctx: Context): Promise<Data> => {
                     text: description,
                 },
                 updated: upDatedStr ? parseDate(upDatedStr, ['DD MMM YYYY', 'YYYY 年 MM 月 DD 日']) : undefined,
-                language: language as Language,
+                language,
             };
 
             return processedItem;
@@ -97,7 +104,7 @@ export const handler = async (ctx: Context): Promise<Data> => {
                         text: description,
                     },
                     updated: upDatedStr ? parseDate(upDatedStr, 'MMDDYYYY') : item.updated,
-                    language: language as Language,
+                    language,
                 };
 
                 return {
@@ -115,7 +122,7 @@ export const handler = async (ctx: Context): Promise<Data> => {
         item: items,
         allowEmpty: true,
         author: $('meta[property="og:site_name"]').attr('content'),
-        language: language as Language,
+        language,
         id: targetUrl,
     };
 };

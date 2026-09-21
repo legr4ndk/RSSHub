@@ -14,6 +14,7 @@ type ConfigEnvKeys =
     | 'CHROMIUM_EXECUTABLE_PATH'
     // Network
     | 'PORT'
+    | 'SOCKET'
     | 'LISTEN_INADDR_ANY'
     | 'DISABLE_IPV6'
     | 'REQUEST_RETRY'
@@ -93,6 +94,8 @@ type ConfigEnvKeys =
     | 'BTBYR_HOST'
     | 'BTBYR_COOKIE'
     | 'BUPT_PORTAL_COOKIE'
+    | 'BUKENAVI_EMAIL'
+    | 'BUKENAVI_PASSWORD'
     | 'CAIXIN_COOKIE'
     | 'CIVITAI_COOKIE'
     | 'DIANPING_COOKIE'
@@ -110,6 +113,7 @@ type ConfigEnvKeys =
     | 'EH_STAR'
     | 'EH_IMG_PROXY'
     | `EMAIL_CONFIG_${string}`
+    | 'ETHERSCAN_API_KEY'
     | 'F95ZONE_COOKIE'
     | 'FANBOX_SESSION_ID'
     | 'FANFOU_CONSUMER_KEY'
@@ -172,6 +176,7 @@ type ConfigEnvKeys =
     | 'NHENTAI_USERNAME'
     | 'NHENTAI_PASSWORD'
     | 'NOTION_TOKEN'
+    | 'ONLYFANS_COOKIE'
     | 'PATREON_SESSION_ID'
     | 'PIANYUAN_COOKIE'
     | 'PIXABAY_KEY'
@@ -194,6 +199,8 @@ type ConfigEnvKeys =
     | 'SIS001_BASE_URL'
     | 'SKEB_BEARER_TOKEN'
     | 'SORRYCC_COOKIES'
+    | 'SOUTHPLUS_COOKIE'
+    | 'SOUTHPLUS_UA'
     | 'SPOTIFY_CLIENT_ID'
     | 'SPOTIFY_CLIENT_SECRET'
     | 'SPOTIFY_REFRESHTOKEN'
@@ -268,6 +275,7 @@ export type Config = {
     // network
     connect: {
         port: number;
+        socket?: string;
     };
     listenInaddrAny: boolean;
     disableIPv6: boolean;
@@ -378,6 +386,10 @@ export type Config = {
         host?: string;
         cookies?: string;
     };
+    bukenavi: {
+        email?: string;
+        password?: string;
+    };
     bupt: {
         portal_cookie?: string;
     };
@@ -419,6 +431,9 @@ export type Config = {
     };
     email: {
         config: Record<string, string | undefined>;
+    };
+    etherscan: {
+        apiKey?: string;
     };
     f95zone: {
         cookie?: string;
@@ -561,6 +576,9 @@ export type Config = {
     notion: {
         key?: string;
     };
+    onlyfans: {
+        cookie?: string;
+    };
     patreon: {
         sessionId?: string;
     };
@@ -611,6 +629,10 @@ export type Config = {
     };
     sorrycc: {
         cookie?: string;
+    };
+    southplus: {
+        cookie?: string;
+        ua?: string;
     };
     spotify: {
         clientId?: string;
@@ -717,7 +739,7 @@ export type Config = {
     };
 };
 
-const value: Config | Record<string, any> = {};
+const value = {} as Config;
 
 const TRUE_UA = 'RSSHub/1.0 (+http://github.com/DIYgod/RSSHub; like FeedFetcher-Google)';
 
@@ -768,6 +790,7 @@ const calculateValue = () => {
         // network
         connect: {
             port: toInt(envs.PORT, 1200), // 监听端口
+            socket: envs.SOCKET || undefined, // listen on a unix socket instead of a TCP port
         },
         listenInaddrAny: toBoolean(envs.LISTEN_INADDR_ANY, true), // 是否允许公网连接，取值 0 1
         disableIPv6: toBoolean(envs.DISABLE_IPV6, false),
@@ -887,6 +910,10 @@ const calculateValue = () => {
         bupt: {
             portal_cookie: envs.BUPT_PORTAL_COOKIE,
         },
+        bukenavi: {
+            email: envs.BUKENAVI_EMAIL,
+            password: envs.BUKENAVI_PASSWORD,
+        },
         caixin: {
             cookie: envs.CAIXIN_COOKIE,
         },
@@ -925,6 +952,9 @@ const calculateValue = () => {
         },
         email: {
             config: email_config,
+        },
+        etherscan: {
+            apiKey: envs.ETHERSCAN_API_KEY,
         },
         f95zone: {
             cookie: envs.F95ZONE_COOKIE,
@@ -1067,6 +1097,9 @@ const calculateValue = () => {
         notion: {
             key: envs.NOTION_TOKEN,
         },
+        onlyfans: {
+            cookie: envs.ONLYFANS_COOKIE,
+        },
         patreon: {
             sessionId: envs.PATREON_SESSION_ID,
         },
@@ -1117,6 +1150,10 @@ const calculateValue = () => {
         },
         sorrycc: {
             cookie: envs.SORRYCC_COOKIES,
+        },
+        southplus: {
+            cookie: envs.SOUTHPLUS_COOKIE,
+            ua: envs.SOUTHPLUS_UA,
         },
         spotify: {
             clientId: envs.SPOTIFY_CLIENT_ID,
@@ -1223,9 +1260,7 @@ const calculateValue = () => {
         },
     };
 
-    for (const name in _value) {
-        value[name] = _value[name];
-    }
+    Object.assign(value, _value);
 };
 calculateValue();
 (async () => {
@@ -1251,7 +1286,6 @@ calculateValue();
     }
 })();
 
-// @ts-expect-error value is set
 export const config: Config = value;
 
 export const setConfig = (env: ConfigEnv) => {
